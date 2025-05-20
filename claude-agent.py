@@ -5,7 +5,8 @@
 # dependencies = [
 #   "rich",
 #   "click",
-#   "halo"
+#   "halo",
+#   "python-dotenv"
 # ]
 # ///
 
@@ -18,15 +19,18 @@ from rich.console import Console
 from rich.syntax import Syntax
 from rich import print as rprint
 from halo import Halo
+from dotenv import load_dotenv
 
 # Initialize rich console
 console = Console()
 
+# Load environment variables from .env file
+load_dotenv()
+
 @click.command()
 @click.argument('working_directory', required=False)
 @click.option('--claude-md', help='Path to CLAUDE.md file containing Claude rules (optional)')
-@click.option('--claude-path', help='Path to the Claude executable (optional)', envvar='CLAUDE_PATH')
-def main(working_directory, claude_md, claude_path):
+def main(working_directory, claude_md):
     """Process todo list from a markdown file using Claude Code."""
     
     # If no working directory provided, prompt for it
@@ -109,13 +113,21 @@ def main(working_directory, claude_md, claude_path):
         spinner = Halo(text=f'Starting Claude Code to process todos from: {working_directory}', spinner='dots')
         spinner.start()
 
-        # Use specific path for Claude executable if provided, otherwise try "claude"
-        claude_executable = claude_path if claude_path else "claude"
+        # Get Claude executable path from environment variable
+        claude_executable = os.getenv("CLAUDE_PATH")
         
-        # If claude_path not set, warn the user
-        if not claude_path:
-            console.print("[bold yellow]Warning: CLAUDE_PATH environment variable not set. Using 'claude' from PATH.[/bold yellow]")
-            console.print("[bold yellow]If this fails, set CLAUDE_PATH environment variable to the full path of the Claude executable.[/bold yellow]")
+        # Validate Claude executable path
+        if not claude_executable:
+            console.print("[bold red]Error: CLAUDE_PATH environment variable not set.[/bold red]")
+            console.print("[bold red]Please create a .env file with CLAUDE_PATH=/path/to/claude[/bold red]")
+            console.print("[bold red]See .env.example for reference.[/bold red]")
+            sys.exit(1)
+            
+        # Check if the executable exists and is executable
+        if not os.path.isfile(claude_executable) or not os.access(claude_executable, os.X_OK):
+            console.print(f"[bold red]Error: Claude executable not found or not executable at {claude_executable}[/bold red]")
+            console.print("[bold red]Please check your CLAUDE_PATH environment variable.[/bold red]")
+            sys.exit(1)
         
         cmd = [
             claude_executable,
