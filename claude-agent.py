@@ -137,12 +137,11 @@ def main(working_directory, claude_md):
         
         cmd = [
             claude_executable,
-            "-p",
-            prompt,
-            "--output-format",
-            "stream-json",
+            "--print",  # Explicitly use --print instead of -p for clarity
+            "--verbose",  # Required when using --output-format=stream-json
+            "--output-format", "stream-json",
             "--allowedTools",
-        ] + allowed_tools
+        ] + allowed_tools + ["--", prompt]  # Use -- to separate flags from the prompt
 
         # Start the process and read output as it comes
         spinner.stop()
