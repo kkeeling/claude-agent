@@ -27,6 +27,26 @@ console = Console()
 # Load environment variables from .env file
 load_dotenv()
 
+# Validate Claude executable path early
+def validate_claude_path():
+    claude_executable = os.getenv("CLAUDE_PATH")
+    if not claude_executable:
+        console.print("[bold red]Error: CLAUDE_PATH environment variable not set.[/bold red]")
+        console.print("[bold red]Please create a .env file with CLAUDE_PATH=/path/to/claude[/bold red]")
+        console.print("[bold red]See .env.example for reference.[/bold red]")
+        sys.exit(1)
+        
+    # Check if the executable exists and is executable
+    if not os.path.isfile(claude_executable) or not os.access(claude_executable, os.X_OK):
+        console.print(f"[bold red]Error: Claude executable not found or not executable at {claude_executable}[/bold red]")
+        console.print("[bold red]Please check your CLAUDE_PATH environment variable.[/bold red]")
+        sys.exit(1)
+    
+    return claude_executable
+
+# Validate CLAUDE_PATH before anything else
+claude_executable = validate_claude_path()
+
 @click.command()
 @click.argument('working_directory', required=False)
 @click.option('--claude-md', help='Path to CLAUDE.md file containing Claude rules (optional)')
@@ -113,21 +133,7 @@ def main(working_directory, claude_md):
         spinner = Halo(text=f'Starting Claude Code to process todos from: {working_directory}', spinner='dots')
         spinner.start()
 
-        # Get Claude executable path from environment variable
-        claude_executable = os.getenv("CLAUDE_PATH")
-        
-        # Validate Claude executable path
-        if not claude_executable:
-            console.print("[bold red]Error: CLAUDE_PATH environment variable not set.[/bold red]")
-            console.print("[bold red]Please create a .env file with CLAUDE_PATH=/path/to/claude[/bold red]")
-            console.print("[bold red]See .env.example for reference.[/bold red]")
-            sys.exit(1)
-            
-        # Check if the executable exists and is executable
-        if not os.path.isfile(claude_executable) or not os.access(claude_executable, os.X_OK):
-            console.print(f"[bold red]Error: Claude executable not found or not executable at {claude_executable}[/bold red]")
-            console.print("[bold red]Please check your CLAUDE_PATH environment variable.[/bold red]")
-            sys.exit(1)
+        # Claude executable was already validated at the beginning of the script
         
         cmd = [
             claude_executable,
