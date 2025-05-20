@@ -246,9 +246,10 @@ def main(working_directory, claude_md):
         # Process and display JSON output in real-time with improved formatting
         console.print("\n[bold green]📊 Streaming Claude output:[/bold green]")
         
-        from rich.live import Live
         from rich.panel import Panel
         from rich.json import JSON
+        from rich.text import Text
+        from rich.console import Group
         import json
         
         # Function to format the JSON message based on its type
@@ -261,41 +262,76 @@ def main(working_directory, claude_md):
                     # Format assistant messages in green
                     content = data.get('message', {}).get('content', '')
                     if content:
-                        return Panel(f"[bold green]Assistant:[/bold green] {content}", 
-                                    border_style="green", 
-                                    title="[bold]Message[/bold]")
-                    return Panel(JSON(json_line), border_style="green", title=f"[bold]Assistant ({msg_type})[/bold]")
+                        # Ensure content wraps properly by using Text
+                        text = Text.from_markup(f"[bold green]Assistant:[/bold green] {content}")
+                        return Panel(text, border_style="green", title="[bold]Message[/bold]", width=console.width - 4)
+                    # Use width parameter to ensure proper wrapping
+                    return Panel(
+                        JSON(json_line, indent=2), 
+                        border_style="green", 
+                        title=f"[bold]Assistant ({msg_type})[/bold]",
+                        width=console.width - 4
+                    )
                 
                 elif msg_type == "system":
                     # Format system messages in blue
-                    return Panel(JSON(json_line), border_style="blue", title=f"[bold]System ({msg_type})[/bold]")
+                    return Panel(
+                        JSON(json_line, indent=2), 
+                        border_style="blue", 
+                        title=f"[bold]System ({msg_type})[/bold]",
+                        width=console.width - 4
+                    )
                 
                 elif msg_type == "user":
                     # Format user messages in yellow
-                    return Panel(JSON(json_line), border_style="yellow", title=f"[bold]User ({msg_type})[/bold]")
+                    return Panel(
+                        JSON(json_line, indent=2), 
+                        border_style="yellow", 
+                        title=f"[bold]User ({msg_type})[/bold]",
+                        width=console.width - 4
+                    )
                 
                 elif msg_type == "result":
                     # Format result messages in magenta
-                    return Panel(JSON(json_line), border_style="magenta", title=f"[bold]Result ({msg_type})[/bold]")
+                    return Panel(
+                        JSON(json_line, indent=2), 
+                        border_style="magenta", 
+                        title=f"[bold]Result ({msg_type})[/bold]",
+                        width=console.width - 4
+                    )
                 
                 else:
                     # Default formatting for other message types
-                    return Panel(JSON(json_line), title=f"[bold]{msg_type}[/bold]")
+                    return Panel(
+                        JSON(json_line, indent=2), 
+                        title=f"[bold]{msg_type}[/bold]",
+                        width=console.width - 4
+                    )
             
             except json.JSONDecodeError:
                 # Handle invalid JSON
-                return Panel(line, title="[bold red]Invalid JSON[/bold red]", border_style="red")
+                return Panel(
+                    line, 
+                    title="[bold red]Invalid JSON[/bold red]", 
+                    border_style="red",
+                    width=console.width - 4
+                )
         
-        # Read and display JSON output in real-time
-        with Live(refresh_per_second=4) as live:
-            while True:
-                line = process.stdout.readline()
-                if not line and process.poll() is not None:
-                    break
-                
-                if line.strip():
-                    formatted_output = format_message(line)
-                    live.update(formatted_output)
+        # Keep a list of messages for history
+        message_history = []
+        
+        # Read and display each line as we receive it
+        while True:
+            line = process.stdout.readline()
+            if not line and process.poll() is not None:
+                break
+            
+            if line.strip():
+                formatted_output = format_message(line)
+                # Print each message immediately to maintain history
+                console.print(formatted_output)
+                # Add a small spacer between messages
+                console.print("")
 
         # Check for any errors
         stderr = process.stderr.read()
