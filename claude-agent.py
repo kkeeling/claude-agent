@@ -25,7 +25,8 @@ console = Console()
 @click.command()
 @click.argument('working_directory', required=False)
 @click.option('--claude-md', help='Path to CLAUDE.md file containing Claude rules (optional)')
-def main(working_directory, claude_md):
+@click.option('--claude-path', help='Path to the Claude executable (optional)', envvar='CLAUDE_PATH')
+def main(working_directory, claude_md, claude_path):
     """Process todo list from a markdown file using Claude Code."""
     
     # If no working directory provided, prompt for it
@@ -108,8 +109,16 @@ def main(working_directory, claude_md):
         spinner = Halo(text=f'Starting Claude Code to process todos from: {working_directory}', spinner='dots')
         spinner.start()
 
+        # Use specific path for Claude executable if provided, otherwise try "claude"
+        claude_executable = claude_path if claude_path else "claude"
+        
+        # If claude_path not set, warn the user
+        if not claude_path:
+            console.print("[bold yellow]Warning: CLAUDE_PATH environment variable not set. Using 'claude' from PATH.[/bold yellow]")
+            console.print("[bold yellow]If this fails, set CLAUDE_PATH environment variable to the full path of the Claude executable.[/bold yellow]")
+        
         cmd = [
-            "claude",
+            claude_executable,
             "-p",
             prompt,
             "--output-format",
