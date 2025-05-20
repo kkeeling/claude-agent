@@ -127,7 +127,6 @@ def main(working_directory, claude_md):
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,  # Line buffered
-            env=os.environ  # Pass the current environment including PATH
         )
 
         # Process and display JSON output in real-time
